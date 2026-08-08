@@ -725,175 +725,311 @@ const seedEvents = async () => {
   }
 };
 
-// Seed Community Posts if empty
-const seedCommunity = async () => {
-  const count = await Post.countDocuments();
-  if (count === 0) {
-    // Find or create a system user for seeding
-    let systemUser = await User.findOne({ email: 'system@srmmcet.edu' });
-    if (!systemUser) {
-      const hashedPassword = await bcrypt.hash('system_secure_pass', 10);
-      systemUser = new User({
-        name: 'Neural Core',
-        email: 'system@srmmcet.edu',
-        password: hashedPassword,
-        role: 'admin'
-      });
-      await systemUser.save();
-    }
-
-    const posts = [
-      {
-        author: systemUser._id,
-        title: 'Welcome to the Command Center!',
-        content: 'This is the central hub for all SRM MCET AI and Cybersecurity students. Feel free to share your research, ask questions, and collaborate on projects.',
-        comments: [
-          { author: systemUser._id, content: 'Glad to be here!', timestamp: new Date() },
-          { author: systemUser._id, content: 'The UI looks amazing, very futuristic.', timestamp: new Date() },
-          { author: systemUser._id, content: 'Can we have a dedicated channel for CTF writeups?', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'New Research: Adversarial Attacks on LLMs',
-        content: 'I recently published a paper on how to mitigate prompt injection attacks. Check it out in the resources section!',
-        comments: [
-          { author: systemUser._id, content: 'This is crucial for our upcoming project.', timestamp: new Date() },
-          { author: systemUser._id, content: 'Does it cover indirect prompt injection as well?', timestamp: new Date() },
-          { author: systemUser._id, content: 'Great work! The defense strategies are very practical.', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'Tips for the upcoming CTF',
-        content: 'Focus on your binary exploitation and web security skills. The AI guardian is particularly sensitive to buffer overflows.',
-        comments: [
-          { author: systemUser._id, content: 'Thanks for the tip! Time to brush up on GDB.', timestamp: new Date() },
-          { author: systemUser._id, content: 'Will there be any crypto challenges?', timestamp: new Date() },
-          { author: systemUser._id, content: 'I heard the AI uses reinforcement learning to adapt to our attacks.', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'Job Opportunity: Security Intern at TechCorp',
-        content: 'TechCorp is looking for a cybersecurity intern with a focus on AI security. Apply through the career portal!',
-        comments: [
-          { author: systemUser._id, content: 'Just applied! Hope to get an interview.', timestamp: new Date() },
-          { author: systemUser._id, content: 'What are the requirements for this role?', timestamp: new Date() },
-          { author: systemUser._id, content: 'Is it remote or on-site?', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'Weekly Knowledge Sharing: Zero Trust Architecture',
-        content: 'This week we are discussing Zero Trust. Why is it becoming the industry standard?',
-        comments: [
-          { author: systemUser._id, content: 'Never trust, always verify!', timestamp: new Date() },
-          { author: systemUser._id, content: 'It really helps in mitigating lateral movement within a network.', timestamp: new Date() },
-          { author: systemUser._id, content: 'The principle of least privilege is key here.', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'Call for Volunteers: CyberSentinel Hackathon',
-        content: 'We need volunteers for the upcoming hackathon! If you are interested in helping with logistics or mentoring, please sign up.',
-        comments: [
-          { author: systemUser._id, content: 'I can help with mentoring for the AI track.', timestamp: new Date() },
-          { author: systemUser._id, content: 'Count me in for logistics!', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'New Tool: AI-Powered Vulnerability Scanner',
-        content: 'I developed a simple tool that uses GPT-4 to scan for common web vulnerabilities. Check out the repo!',
-        comments: [
-          { author: systemUser._id, content: 'This is amazing! Can it detect SQLi?', timestamp: new Date() },
-          { author: systemUser._id, content: 'Be careful with false positives.', timestamp: new Date() },
-          { author: systemUser._id, content: 'I tried it on a test site, it found a few XSS!', timestamp: new Date() }
-        ]
-      },
-      {
-        author: systemUser._id,
-        title: 'Discussion: Ethical Implications of AI in Cyberwarfare',
-        content: 'What are your thoughts on autonomous cyber weapons? Should there be international regulations?',
-        comments: [
-          { author: systemUser._id, content: 'Absolutely, we need a Geneva Convention for cyberspace.', timestamp: new Date() },
-          { author: systemUser._id, content: 'It is a double-edged sword.', timestamp: new Date() },
-          { author: systemUser._id, content: 'The attribution problem makes regulation difficult.', timestamp: new Date() }
-        ]
-      }
-    ];
-
-    await Post.create(posts);
-  }
-};
-
-// Seed Teams if empty
-const seedTeams = async () => {
-  const count = await Team.countDocuments();
-  if (count === 0) {
-    let systemUser = await User.findOne({ email: 'system@srmmcet.edu' });
-    if (!systemUser) return;
-
-    const teams = [
-      {
-        name: 'Cyber Phantoms',
-        description: 'An elite group of ethical hackers focused on penetration testing and vulnerability research.',
-        leader: systemUser._id,
-        members: [systemUser._id],
-        maxMembers: 5
-      },
-      {
-        name: 'Neural Defenders',
-        description: 'Specializing in AI-driven threat detection and automated incident response systems.',
-        leader: systemUser._id,
-        members: [systemUser._id],
-        maxMembers: 5
-      },
-      {
-        name: 'Binary Wizards',
-        description: 'Focused on reverse engineering, malware analysis, and low-level system security.',
-        leader: systemUser._id,
-        members: [systemUser._id],
-        maxMembers: 5
-      }
-    ];
-
-    await Team.create(teams);
-  }
-};
-
 // Seed Users if empty
 const seedUsers = async () => {
   const count = await User.countDocuments();
   if (count <= 1) { // Only system user or none
+    // Ensure system user exists
+    let systemUser = await User.findOne({ email: 'system@srmmcet.edu' });
+    if (!systemUser) {
+      const adminHashedPassword = await bcrypt.hash('system_secure_pass', 10);
+      systemUser = await User.create({
+        name: 'Neural Core',
+        email: 'system@srmmcet.edu',
+        password: adminHashedPassword,
+        bio: 'Command Center AI & System Administrator',
+        skills: ['AI Defense', 'System Engineering', 'Security Management'],
+        points: 5000,
+        badges: ['🔑 System Root', '🛡️ Cyber Commander'],
+        eventsParticipated: 15,
+        role: 'admin'
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash('password123', 10);
     const users = [
-      { name: 'Alex "Cipher" Chen', email: 'alex@srm.edu', password: 'password123', points: 2450, badges: ['🏆 CTF Champ', '🛡️ Bug Hunter'], eventsParticipated: 12 },
-      { name: 'Sarah "Neural" Smith', email: 'sarah@srm.edu', password: 'password123', points: 2100, badges: ['🧠 AI Expert', '💻 Code Ninja'], eventsParticipated: 10 },
-      { name: 'Jordan "Root" Miller', email: 'jordan@srm.edu', password: 'password123', points: 1950, badges: ['🔥 Speedster'], eventsParticipated: 8 },
-      { name: 'Elena "Ghost" V', email: 'elena@srm.edu', password: 'password123', points: 1800, badges: ['🕵️ Forensics'], eventsParticipated: 7 },
-      { name: 'Marcus "Void" Lee', email: 'marcus@srm.edu', password: 'password123', points: 1650, badges: ['🛠️ Tool Builder'], eventsParticipated: 6 },
-      { name: 'Priya "Secure" K', email: 'priya@srm.edu', password: 'password123', points: 1500, badges: ['🔐 Crypto', '🛡️ Defender'], eventsParticipated: 5 },
-      { name: 'David "Data" W', email: 'david@srm.edu', password: 'password123', points: 1420, badges: ['📊 Analyst'], eventsParticipated: 5 },
-      { name: 'Sofia "Logic" R', email: 'sofia@srm.edu', password: 'password123', points: 1350, badges: ['🧩 Solver'], eventsParticipated: 4 },
-      { name: 'Kevin "Kernel" J', email: 'kevin@srm.edu', password: 'password123', points: 1280, badges: ['🐧 Linux Guru'], eventsParticipated: 4 },
-      { name: 'Aisha "Cloud" M', email: 'aisha@srm.edu', password: 'password123', points: 1200, badges: ['☁️ Cloud Sec'], eventsParticipated: 3 }
+      {
+        name: 'Alex "Cipher" Chen',
+        email: 'alex@srm.edu',
+        password: hashedPassword,
+        bio: 'Penetration Tester | CTF Enthusiast',
+        skills: ['Web Exploit', 'Python', 'Reverse Engineering'],
+        points: 2450,
+        badges: ['🏆 CTF Champ', '🛡️ Bug Hunter'],
+        eventsParticipated: 12,
+        role: 'user'
+      },
+      {
+        name: 'Sarah "Neural" Smith',
+        email: 'sarah@srm.edu',
+        password: hashedPassword,
+        bio: 'AI Security Researcher',
+        skills: ['Machine Learning', 'TensorFlow', 'LLM Security'],
+        points: 2100,
+        badges: ['🧠 AI Expert', '💻 Code Ninja'],
+        eventsParticipated: 10,
+        role: 'user'
+      },
+      {
+        name: 'Jordan "Root" Miller',
+        email: 'jordan@srm.edu',
+        password: hashedPassword,
+        bio: 'Low-Level Security Researcher',
+        skills: ['C/C++', 'Linux Kernel', 'Exploit Dev'],
+        points: 1950,
+        badges: ['🔥 Speedster'],
+        eventsParticipated: 8,
+        role: 'user'
+      },
+      {
+        name: 'Elena "Ghost" V',
+        email: 'elena@srm.edu',
+        password: hashedPassword,
+        bio: 'Digital Forensics Analyst',
+        skills: ['Malware Analysis', 'Wireshark', 'OSINT'],
+        points: 1800,
+        badges: ['🕵️ Forensics'],
+        eventsParticipated: 7,
+        role: 'user'
+      },
+      {
+        name: 'Marcus "Void" Lee',
+        email: 'marcus@srm.edu',
+        password: hashedPassword,
+        bio: 'Security Tool Builder',
+        skills: ['Go', 'Rust', 'Docker'],
+        points: 1650,
+        badges: ['🛠️ Tool Builder'],
+        eventsParticipated: 6,
+        role: 'user'
+      },
+      {
+        name: 'Priya "Secure" K',
+        email: 'priya@srm.edu',
+        password: hashedPassword,
+        bio: 'Cryptographer',
+        skills: ['Number Theory', 'Solidity', 'Web3 Auditing'],
+        points: 1500,
+        badges: ['🔐 Crypto', '🛡️ Defender'],
+        eventsParticipated: 5,
+        role: 'user'
+      },
+      {
+        name: 'David "Data" W',
+        email: 'david@srm.edu',
+        password: hashedPassword,
+        bio: 'Security Analyst',
+        skills: ['SIEM', 'Threat Intelligence', 'Log Analysis'],
+        points: 1420,
+        badges: ['📊 Analyst'],
+        eventsParticipated: 5,
+        role: 'user'
+      },
+      {
+        name: 'Kevin "Kernel" J',
+        email: 'kevin@srm.edu',
+        password: hashedPassword,
+        bio: 'Linux System Engineer',
+        skills: ['Bash Scripting', 'Virtualization', 'Ansible'],
+        points: 1280,
+        badges: ['🐧 Linux Guru'],
+        eventsParticipated: 4,
+        role: 'user'
+      },
+      {
+        name: 'Aisha "Cloud" M',
+        email: 'aisha@srm.edu',
+        password: hashedPassword,
+        bio: 'Cloud Security Architect',
+        skills: ['AWS Security', 'Terraform', 'Kubernetes'],
+        points: 1200,
+        badges: ['☁️ Cloud Sec'],
+        eventsParticipated: 3,
+        role: 'user'
+      }
     ];
     
     for (const u of users) {
       const exists = await User.findOne({ email: u.email });
       if (!exists) {
-        const hashedPassword = await bcrypt.hash(u.password, 10);
-        await User.create({ ...u, password: hashedPassword });
+        await User.create(u);
       }
     }
   }
 };
 
-seedEvents();
-seedCommunity();
-seedTeams();
-seedUsers();
+// Seed Community Posts if empty
+const seedCommunity = async () => {
+  const adminUser = await User.findOne({ email: 'system@srmmcet.edu' });
+  const alex = await User.findOne({ email: 'alex@srm.edu' });
+  const sarah = await User.findOne({ email: 'sarah@srm.edu' });
+  const jordan = await User.findOne({ email: 'jordan@srm.edu' });
+  const elena = await User.findOne({ email: 'elena@srm.edu' });
+  const priya = await User.findOne({ email: 'priya@srm.edu' });
+  const marcus = await User.findOne({ email: 'marcus@srm.edu' });
+  const david = await User.findOne({ email: 'david@srm.edu' });
+  const kevin = await User.findOne({ email: 'kevin@srm.edu' });
+  const aisha = await User.findOne({ email: 'aisha@srm.edu' });
+
+  if (!adminUser || !alex || !sarah || !jordan || !elena || !priya || !marcus || !david || !kevin || !aisha) {
+    return;
+  }
+
+  const posts = [
+    {
+      author: adminUser._id,
+      title: 'Welcome to the Command Center!',
+      content: 'This is the central hub for all SRM MCET AI and Cybersecurity students. Feel free to share your research, ask questions, and collaborate on projects.',
+      likes: [alex._id, sarah._id, jordan._id, priya._id],
+      comments: [
+        { author: sarah._id, content: 'Glad to be here! The UI looks amazing, very futuristic.', timestamp: new Date() },
+        { author: jordan._id, content: 'Can we have a dedicated channel for CTF writeups?', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    },
+    {
+      author: sarah._id,
+      title: 'New Research: Adversarial Attacks on LLMs',
+      content: 'I recently published a paper on how to mitigate prompt injection attacks in student-led applications. We cover input sanitization, guardrail models, and robust verification processes. Check it out!',
+      likes: [alex._id, jordan._id, aisha._id, kevin._id, david._id],
+      comments: [
+        { author: alex._id, content: "This is crucial for our upcoming project. Let's collaborate.", timestamp: new Date() },
+        { author: priya._id, content: 'Does it cover indirect prompt injection as well?', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    },
+    {
+      author: jordan._id,
+      title: 'Buffer Overflows vs. Modern OS Mitigations',
+      content: 'Explaining how modern OS protections like ASLR, DEP/NX, and stack canaries make traditional shellcode injection much harder, and how ROP (Return-Oriented Programming) bypasses them.',
+      likes: [alex._id, elena._id, kevin._id],
+      comments: [
+        { author: elena._id, content: 'Great explanation! Time to brush up on GDB and pwntools.', timestamp: new Date() },
+        { author: kevin._id, content: 'ASLR is easy to bypass if you find an information leak.', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    },
+    {
+      author: aisha._id,
+      title: 'Cloud Misconfigurations: The #1 Security Threat',
+      content: 'Discussing the most common cloud security leaks, including open S3 buckets, overly permissive IAM roles, and exposed API keys in public repositories. Let\'s secure our cloud resources!',
+      likes: [sarah._id, priya._id, david._id],
+      comments: [
+        { author: david._id, content: 'Exactly! Most breaches are due to configuration errors, not zero-days.', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    },
+    {
+      author: priya._id,
+      title: 'Zero Trust Architecture in Enterprise Systems',
+      content: 'An analysis of the Zero Trust security model. Why should we \'never trust, always verify\' even for requests inside our local network boundaries? Let\'s discuss lateral movement.',
+      likes: [sarah._id, alex._id, marcus._id],
+      comments: [
+        { author: marcus._id, content: 'Least privilege access control is key here.', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000)
+    },
+    {
+      author: alex._id,
+      title: 'Tips for the Upcoming CyberSentinel Hackathon',
+      content: 'Focus on your network scanning, web application security, and report drafting skills. The hackathon challenge will test full-stack infrastructure compromises. Good luck!',
+      likes: [sarah._id, jordan._id, elena._id, priya._id, marcus._id, david._id],
+      comments: [
+        { author: jordan._id, content: "Can't wait! Teams are already preparing.", timestamp: new Date() },
+        { author: elena._id, content: 'Is there a specific scope or IP range we should expect?', timestamp: new Date() }
+      ],
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+    }
+  ];
+
+  for (const p of posts) {
+    const exists = await Post.findOne({ title: p.title });
+    if (!exists) {
+      await Post.create(p);
+    }
+  }
+};
+
+// Seed Teams if empty
+const seedTeams = async () => {
+  const alex = await User.findOne({ email: 'alex@srm.edu' });
+  const sarah = await User.findOne({ email: 'sarah@srm.edu' });
+  const jordan = await User.findOne({ email: 'jordan@srm.edu' });
+  const elena = await User.findOne({ email: 'elena@srm.edu' });
+  const priya = await User.findOne({ email: 'priya@srm.edu' });
+  const marcus = await User.findOne({ email: 'marcus@srm.edu' });
+  const kevin = await User.findOne({ email: 'kevin@srm.edu' });
+  const aisha = await User.findOne({ email: 'aisha@srm.edu' });
+
+  if (!alex || !sarah || !jordan || !elena || !priya || !marcus || !kevin || !aisha) {
+    return;
+  }
+
+  const teams = [
+    {
+      name: 'Cyber Phantoms',
+      description: 'An elite group of ethical hackers focused on penetration testing, CTF operations, and vulnerability research.',
+      leader: alex._id,
+      members: [alex._id, sarah._id, jordan._id],
+      maxMembers: 5,
+      isApproved: true
+    },
+    {
+      name: 'Neural Defenders',
+      description: 'Specializing in AI-driven threat detection, neural firewall design, and automated incident response systems.',
+      leader: sarah._id,
+      members: [sarah._id, priya._id],
+      maxMembers: 5,
+      isApproved: true
+    },
+    {
+      name: 'Binary Wizards',
+      description: 'Focused on low-level binary exploitation, reverse engineering, malware analysis, and kernel-level security.',
+      leader: jordan._id,
+      members: [jordan._id, elena._id],
+      maxMembers: 5,
+      isApproved: true
+    },
+    {
+      name: 'Cloud Sentinels',
+      description: 'Auditing cloud architecture configurations, securing AWS/Azure environments, and enforcing Zero-Trust IAM protocols.',
+      leader: aisha._id,
+      members: [aisha._id, kevin._id],
+      maxMembers: 4,
+      isApproved: true
+    },
+    {
+      name: 'Quantum Cryptographers',
+      description: 'Deep dive research into post-quantum cryptography algorithms, lattice-based encryption systems, and secure communication protocols.',
+      leader: priya._id,
+      members: [priya._id],
+      requests: [marcus._id], // A pending join request!
+      maxMembers: 4,
+      isApproved: true
+    }
+  ];
+
+  for (const t of teams) {
+    const exists = await Team.findOne({ name: t.name });
+    if (!exists) {
+      await Team.create(t);
+    }
+  }
+};
+
+const startSeeding = async () => {
+  try {
+    await seedUsers();
+    await seedEvents();
+    await seedCommunity();
+    await seedTeams();
+    console.log("Database initial seeding check completed.");
+  } catch (err) {
+    console.error("Database seeding failed:", err);
+  }
+};
+
+startSeeding();
 
 // --- Vite Middleware ---
 async function startServer() {

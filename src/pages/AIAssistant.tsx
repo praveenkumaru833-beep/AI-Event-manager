@@ -33,7 +33,15 @@ const AIAssistant = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage, mode }),
       });
-      const data = await res.json();
+      
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = {};
+      }
+
       if (res.ok) {
         setMessages(prev => [...prev, { role: 'ai', content: data.text || "I'm sorry, I couldn't process that request." }]);
       } else {

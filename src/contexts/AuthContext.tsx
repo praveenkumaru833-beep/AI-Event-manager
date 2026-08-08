@@ -25,6 +25,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const safeJson = async (res: Response) => {
+  try {
+    const text = await res.text();
+    return text ? JSON.parse(text) : {};
+  } catch (err) {
+    return {};
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson(res);
         setUser(data);
       } else {
         setUser(null);
@@ -56,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-      const error = await res.json();
+      const error = await safeJson(res);
       throw new Error(error.error || 'Login failed');
     }
     await refreshUser();
@@ -69,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ name, email, password }),
     });
     if (!res.ok) {
-      const error = await res.json();
+      const error = await safeJson(res);
       throw new Error(error.error || 'Registration failed');
     }
   };
