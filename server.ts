@@ -228,6 +228,25 @@ app.post("/api/teams/:id/accept", authenticate, async (req: any, res) => {
   }
 });
 
+app.post("/api/teams/:id/reject", authenticate, async (req: any, res) => {
+  try {
+    const { userId } = req.body;
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: "Team not found" });
+    
+    const currentUser = await User.findById(req.userId);
+    if (team.leader.toString() !== req.userId && currentUser?.role !== 'admin') {
+      return res.status(403).json({ error: "Only the commander or admin can manage requests" });
+    }
+    
+    team.requests = team.requests.filter(id => id.toString() !== userId);
+    await team.save();
+    res.json({ message: "Join request rejected" });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Community Posts
 app.get("/api/posts", async (req, res) => {
   const posts = await Post.find().sort({ timestamp: -1 }).populate("author comments.author", "name");

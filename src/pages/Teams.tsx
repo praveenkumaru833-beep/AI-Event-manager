@@ -89,6 +89,21 @@ const Teams = () => {
     }
   };
 
+  const handleRejectMember = async (teamId: string, userId: string) => {
+    try {
+      const res = await fetch(`/api/teams/${teamId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      alert(data.message || data.error);
+      fetchTeams();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
@@ -155,7 +170,11 @@ const Teams = () => {
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
-                            <button className="p-1.5 bg-soft-red/10 hover:bg-soft-red/20 text-soft-red rounded-lg transition-all border border-soft-red/20" title="Reject Request">
+                            <button 
+                              onClick={() => handleRejectMember(team._id, req._id)}
+                              className="p-1.5 bg-soft-red/10 hover:bg-soft-red/20 text-soft-red rounded-lg transition-all border border-soft-red/20" 
+                              title="Reject Request"
+                            >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
