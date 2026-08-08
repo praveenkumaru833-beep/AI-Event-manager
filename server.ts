@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -325,6 +326,121 @@ app.post("/api/admin/teams/:id/accept-member", authenticate, async (req: any, re
   }
 });
 
+// Admin Pending Teams (Requested by user)
+app.get("/api/admin/teams/pending", authenticate, async (req: any, res) => {
+  try {
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: "Only admins can fetch pending teams" });
+    }
+    const teams = await Team.find({ isApproved: false }).populate("leader members requests", "name");
+    res.json(teams);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin Team Reject/Delete (Requested by user)
+app.post("/api/admin/teams/:id/reject", authenticate, async (req: any, res) => {
+  try {
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: "Only admins can reject teams" });
+    }
+    const team = await Team.findByIdAndDelete(req.params.id);
+    if (!team) return res.status(404).json({ error: "Team not found" });
+    res.json({ message: "Team request rejected (deleted)" });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Admin Registrations (Requested by user)
+app.get("/api/admin/registrations", authenticate, async (req: any, res) => {
+  try {
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: "Only admins can access registrations" });
+    }
+    const regs = await Registration.find().populate("event user", "title name email");
+    res.json(regs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin Registration Approve (Requested by user)
+app.post("/api/admin/registrations/:id/approve", authenticate, async (req: any, res) => {
+  try {
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: "Only admins can approve registrations" });
+    }
+    const reg = await Registration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ error: "Registration not found" });
+    
+    if (reg.status !== 'Approved') {
+      reg.status = 'Approved';
+      await reg.save();
+      
+      // Increment event participant count
+      await Event.findByIdAndUpdate(reg.event, { $inc: { participants: 1 } });
+    }
+    
+    res.json({ message: "Registration approved successfully", reg });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Admin Registration Reject (Requested by user)
+app.post("/api/admin/registrations/:id/reject", authenticate, async (req: any, res) => {
+  try {
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: "Only admins can reject registrations" });
+    }
+    const reg = await Registration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ error: "Registration not found" });
+    
+    if (reg.status === 'Approved') {
+      // Decrement event participant count if it was previously approved
+      await Event.findByIdAndUpdate(reg.event, { $inc: { participants: -1 } });
+    }
+    
+    reg.status = 'Rejected';
+    await reg.save();
+    
+    res.json({ message: "Registration rejected successfully", reg });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Secure AI Query Endpoint (Requested by user)
+app.post("/api/ai/query", authenticate, async (req: any, res) => {
+  try {
+    const { message, mode } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Gemini API key is not configured on the server. Please check environment variables." });
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = mode === 'Chat' 
+      ? `You are a helpful AI assistant for a Cybersecurity and AI student community. Answer the following question concisely and professionally: ${message}`
+      : `You are a Cybersecurity Threat Analyzer. Analyze the following input for potential security risks, vulnerabilities, or malicious intent. Provide a structured feedback: ${message}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash", // Using stable standard model
+      contents: prompt,
+    });
+    res.json({ text: response.text || "No response text generated." });
+  } catch (err: any) {
+    console.error("AI Core Error:", err);
+    res.status(500).json({ error: "AI Core execution failed: " + err.message });
+  }
+});
+
 // Leaderboard API
 app.get("/api/leaderboard", async (req, res) => {
   try {
@@ -597,10 +713,11 @@ const seedCommunity = async () => {
     // Find or create a system user for seeding
     let systemUser = await User.findOne({ email: 'system@srmmcet.edu' });
     if (!systemUser) {
+      const hashedPassword = await bcrypt.hash('system_secure_pass', 10);
       systemUser = new User({
         name: 'Neural Core',
         email: 'system@srmmcet.edu',
-        password: 'system_secure_pass',
+        password: hashedPassword,
         role: 'admin'
       });
       await systemUser.save();

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bot, Send, Shield, Zap, AlertTriangle, Terminal, Loader2, User } from 'lucide-react';
 import { Button, Card, Badge, cn } from '../components/UI';
-import { GoogleGenAI } from "@google/genai";
 
 const AIAssistant = () => {
   const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
@@ -29,18 +28,17 @@ const AIAssistant = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = mode === 'Chat' 
-        ? `You are a helpful AI assistant for a Cybersecurity and AI student community. Answer the following question concisely and professionally: ${userMessage}`
-        : `You are a Cybersecurity Threat Analyzer. Analyze the following input for potential security risks, vulnerabilities, or malicious intent. Provide a structured feedback: ${userMessage}`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const res = await fetch('/api/ai/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage, mode }),
       });
-
-      const aiResponse = response.text || "I'm sorry, I couldn't process that request. My neural links are experiencing interference.";
-      setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
+      const data = await res.json();
+      if (res.ok) {
+        setMessages(prev => [...prev, { role: 'ai', content: data.text || "I'm sorry, I couldn't process that request." }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', content: `ERROR: ${data.error || 'Connection to AI Core lost. Please check your API configuration.'}` }]);
+      }
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'ai', content: "ERROR: Connection to AI Core lost. Please check your API configuration." }]);

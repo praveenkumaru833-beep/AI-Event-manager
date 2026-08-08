@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import AIAssistant from './pages/AIAssistant';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Admin from './pages/Admin';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/admin" element={<Admin />} />
               </Routes>
             </PageTransition>
           </main>

@@ -22,6 +22,11 @@ export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [time, setTime] = useState(new Date());
 
+  const navItems = [...NAV_ITEMS];
+  if (user && user.role === 'admin') {
+    navItems.push({ name: 'Admin Panel', path: '/admin', icon: Shield });
+  }
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
@@ -63,7 +68,7 @@ export const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -133,7 +138,7 @@ export const Navbar = () => {
             className="md:hidden bg-dark-surface border-b border-white/10 overflow-hidden"
           >
             <div className="px-4 py-6 space-y-2">
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
